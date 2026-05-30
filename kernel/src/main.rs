@@ -7,11 +7,13 @@ By Leo Timmins, 2026
 
 #![no_std]
 #![no_main]
+#![feature(abi_x86_interrupt)]
 
 use bootloader_api::BootInfo;
 use core::panic::PanicInfo;
 
 mod graphics; // provides ascii bitmaps
+mod arch;
 
 bootloader_api::entry_point!(entry);
 
@@ -23,10 +25,19 @@ fn entry(boot_info: &'static mut BootInfo) -> ! {
 
         let mut gm = graphics::GraphicsManager::new(info, buffer);
 
-        // color_definitions (R,G,B)
-        let color_orange = (217, 137, 052);
+        let white = (240, 240, 240);
+        let green = (100, 240, 100);
+        let red = (240, 100, 100);
 
-        gm.fill_buffer(&color_orange);
+        gm.wipe();
+        gm.write_text(white, "BRONZE OS\n");
+        gm.write_text(white, "MADE BY LEO TIMMINS\n\n");
+        
+        gm.write_text(white, "setting up interupts...\n");
+        arch::init();
+        gm.write_text(green, "success!\n\n");
+
+        gm.write_text(white, "all tasks complete");
     }
 
     loop {}
