@@ -31,7 +31,7 @@ impl GraphicsManager {
 
         // how many charecters can fit on display
         let char_space = (info.width / (9 * scaling), info.height / (17 * scaling));
-        let cursor = (0, 0);
+        let cursor = (1, 1);
 
         Self {
             info,
@@ -72,7 +72,6 @@ impl GraphicsManager {
         if text.is_ascii() {
             let ascii_bytes = text.as_bytes();
             for c in ascii_bytes.iter() {
-
                 match c {
                     b'\n' => {
                         self.cursor_newline();
@@ -127,28 +126,18 @@ impl GraphicsManager {
         }
     }
 
-    /* needs to change to jump to text but thats a later problem */
-    fn cursor_left(&mut self) {
-        if self.cursor.0 == 0 {
-            self.cursor.1 -= 1;
-            self.cursor.0 = self.char_space.1;
-        } else {
-            self.cursor.0 -= 1;
-        }
-    }
-
     fn cursor_right(&mut self) {
         self.cursor.0 += 1;
-        if self.cursor.0 >= self.char_space.0 {
+        if self.cursor.0 >= self.char_space.0 - 1 {
             self.cursor_newline();
         }
     }
 
     fn cursor_newline(&mut self) {
-        self.cursor.0 = 0;
-        if self.cursor.1 == self.char_space.1 -1 {
+        self.cursor.0 = 1;
+        if self.cursor.1 == self.char_space.1 - 1 {
             // Chop the first bit of the framebuffer off to make room
-            self.chop_frame_buffer(17*self.scaling);
+            self.chop_frame_buffer(17 * self.scaling);
             self.cursor.1 = self.char_space.1 - 1;
         } else {
             self.cursor.1 += 1;

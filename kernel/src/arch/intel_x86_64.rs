@@ -12,20 +12,21 @@ lazy_static! {
     };
 }
 
-
 pub fn init_idt() {
     IDT.load();
 }
 
-extern "x86-interrupt" fn breakpoint_handler(
-    stack_frame: InterruptStackFrame
-) {
+extern "x86-interrupt" fn breakpoint_handler(stack_frame: InterruptStackFrame) {
+    if let Some(gm) = super::super::DISPLAY.lock().as_mut() {
+        gm.write_text(super::super::PURPLE, "x86_64 breakpoint interrupt");
+    }
     loop {}
 }
 
 extern "x86-interrupt" fn double_fault_handler(
     stack_frame: InterruptStackFrame,
-    _error_code: u64
+    _error_code: u64,
 ) -> ! {
-    loop {} // kernel panick
+    panic!("double fault!");
+    loop {}
 }
