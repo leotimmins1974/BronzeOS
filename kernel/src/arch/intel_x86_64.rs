@@ -1,3 +1,5 @@
+// for intels x86_64 architecture
+
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 
 use lazy_static::lazy_static;
@@ -17,6 +19,13 @@ pub fn init_idt() {
 }
 
 extern "x86-interrupt" fn breakpoint_handler(stack_frame: InterruptStackFrame) {
+    if let Some(gm) = super::super::DISPLAY.lock().as_mut() {
+        gm.write_text(
+            super::super::PURPLE,
+            "x86_64 breakpoint interrupt".as_bytes(),
+        );
+        gm.write_text(super::super::ORANGE, "\n> stack frame\n".as_bytes());
+    }
     loop {}
 }
 
@@ -24,5 +33,9 @@ extern "x86-interrupt" fn double_fault_handler(
     stack_frame: InterruptStackFrame,
     _error_code: u64,
 ) -> ! {
-    loop {} // kernel panick
+    if let Some(gm) = super::super::DISPLAY.lock().as_mut() {
+        gm.write_text(super::super::ORANGE, "\n> stack frame".as_bytes());
+    }
+    panic!("double fault!");
+    loop {}
 }

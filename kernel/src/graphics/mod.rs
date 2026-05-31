@@ -1,8 +1,14 @@
+use core::num;
+
 use bootloader_api::info::{FrameBufferInfo, PixelFormat};
+use x86_64::structures::paging::mapper::FlagUpdateError::PageNotMapped;
+
+use crate::{PURPLE, YELLOW};
 
 mod fonts;
 
 const CHAR_PAD: usize = 1;
+const CHAR_NONE: u8 = 0; // what char we consider to be nothing
 
 pub struct GraphicsManager {
     info: FrameBufferInfo,
@@ -31,7 +37,7 @@ impl GraphicsManager {
 
         // how many charecters can fit on display
         let char_space = (info.width / (9 * scaling), info.height / (17 * scaling));
-        let cursor = (0, 0);
+        let cursor = (1, 1);
 
         Self {
             info,
@@ -68,19 +74,16 @@ impl GraphicsManager {
         }
     }
 
-    pub fn write_text(&mut self, fg: (u8, u8, u8), text: &str) {
-        if text.is_ascii() {
-            let ascii_bytes = text.as_bytes();
-            for c in ascii_bytes.iter() {
-                match c {
-                    b'\n' => {
-                        self.cursor_newline();
-                    }
-                    _ => {
-                        let bitmap = fonts::get_charecter_bitmap(*c);
-                        self.blit_charecter(self.cursor_to_pixel_coords(), bitmap, fg);
-                        self.cursor_right();
-                    }
+    pub fn write_text(&mut self, fg: (u8, u8, u8), text: &[u8]) {
+        for c in text.iter() {
+            match c {
+                b'\n' => {
+                    self.cursor_newline();
+                }
+                _ => {
+                    let bitmap = fonts::get_charecter_bitmap(*c);
+                    self.blit_charecter(self.cursor_to_pixel_coords(), bitmap, fg);
+                    self.cursor_right();
                 }
             }
         }
@@ -126,25 +129,15 @@ impl GraphicsManager {
         }
     }
 
-    /* needs to change to jump to text but thats a later problem */
-    fn cursor_left(&mut self) {
-        if self.cursor.0 == 0 {
-            self.cursor.1 -= 1;
-            self.cursor.0 = self.char_space.1;
-        } else {
-            self.cursor.0 -= 1;
-        }
-    }
-
     fn cursor_right(&mut self) {
         self.cursor.0 += 1;
-        if self.cursor.0 >= self.char_space.0 {
+        if self.cursor.0 >= self.char_space.0 - 1 {
             self.cursor_newline();
         }
     }
 
     fn cursor_newline(&mut self) {
-        self.cursor.0 = 0;
+        self.cursor.0 = 1;
         if self.cursor.1 == self.char_space.1 - 1 {
             // Chop the first bit of the framebuffer off to make room
             self.chop_frame_buffer(17 * self.scaling);
@@ -183,6 +176,53 @@ impl GraphicsManager {
                     self.buffer[i + 2] = self.background_color.0;
                 }
                 _ => {}
+            }
+        }
+    }
+
+    pub fn write_formated_text_u32(&mut self, color: (u8, u8, u8), text: &[u8], mut number: u32) {
+        if let Some(position) = text.windows(2).position(|w| w == b"{}") {
+            let mut buff = [CHAR_NONE; 10];
+            let mut i = 10;
+
+            if number == 0 {
+                i -= 1;
+                let c = self.u32_digit_to_text(0);
+                buff[i] = c;
+            } else {
+                while number > 0 {
+                    i -= 1;
+                    buff[i] = self.u32_digit_to_text(number % 10);
+                    number /= 10;
+                }
+            }
+
+            self.write_text(color, &text[..position]);
+            self.write_text(color, &buff[i..10]);
+            self.write_text(color, &text[position + 2..]);
+        } else {
+            self.write_text(PURPLE, text);
+            self.write_text(
+                YELLOW,
+                "warning: formatted text has no valid symbol\n\n".as_bytes(),
+            );
+        };
+    }
+
+    fn u32_digit_to_text(&self, number: u32) -> u8 {
+        match number {
+            1 => b'1',
+            2 => b'2',
+            3 => b'3',
+            4 => b'4',
+            5 => b'5',
+            6 => b'6',
+            7 => b'7',
+            8 => b'8',
+            9 => b'9',
+            0 => b'0',
+            _ => {
+                panic!("u32_digit_to_text recieved a non digit")
             }
         }
     }
