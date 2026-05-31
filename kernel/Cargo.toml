@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 bootloader_api = "0.11"
 x86_64 = "0.15.4"
+pic8259 = "0.11.0"
 lazy_static = { version = "1.5.0", default-features = false, features = ["spin_no_std"] }
 spin = "0.12.0"
 

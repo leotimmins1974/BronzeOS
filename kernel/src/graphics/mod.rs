@@ -77,9 +77,16 @@ impl GraphicsManager {
     pub fn write_text(&mut self, fg: (u8, u8, u8), text: &[u8]) {
         for c in text.iter() {
             match c {
+                //newline
                 b'\n' => {
                     self.cursor_newline();
                 }
+                //backspace - we dont need it
+                //b'\x08' => {
+                //    self.cursor_left();
+                //    let bitmap = fonts::get_charecter_bitmap(b' ');
+                //    self.blit_charecter(self.cursor_to_pixel_coords(), bitmap, fg);
+                //}
                 _ => {
                     let bitmap = fonts::get_charecter_bitmap(*c);
                     self.blit_charecter(self.cursor_to_pixel_coords(), bitmap, fg);
@@ -126,6 +133,12 @@ impl GraphicsManager {
             _ => {
                 // Error: Pixel format not supported
             }
+        }
+    }
+
+    fn cursor_left(&mut self) {
+        if self.cursor.0 > 1 {
+            self.cursor.0 -= 1;
         }
     }
 

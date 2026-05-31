@@ -15,14 +15,18 @@ use lazy_static::lazy_static;
 use spin::Mutex;
 
 use crate::graphics::GraphicsManager;
+use crate::keyboard::KeyboardManager;
 
 mod arch;
 mod graphics;
+mod keyboard;
+mod time;
 
 bootloader_api::entry_point!(entry);
 
 lazy_static! {
     static ref DISPLAY: Mutex<Option<GraphicsManager>> = Mutex::new(None);
+    static ref KEYBOARD: Mutex<Option<KeyboardManager>> = Mutex::new(None);
 }
 
 const WHITE: (u8, u8, u8) = (240, 240, 240);
@@ -48,12 +52,23 @@ fn entry(boot_info: &'static mut BootInfo) -> ! {
         gm.write_text(ORANGE, "BRONZE KERNEL\n".as_bytes());
         gm.write_text(WHITE, "MADE BY LEO TIMMINS\n".as_bytes());
         gm.write_text(WHITE, "version 0.1.0\n\n".as_bytes());
-
-        gm.write_text(WHITE, "setting up interrupts...\n".as_bytes());
     }
 
-    arch::init();
+    /* Keyboard Manager setup */
+    if let Some(gm) = DISPLAY.lock().as_mut() {
+        gm.write_text(WHITE, "setting up keyboard manager...\n".as_bytes());
+    }
+    let km = KeyboardManager::new();
+    *KEYBOARD.lock() = Some(km);
+    if let Some(gm) = DISPLAY.lock().as_mut() {
+        gm.write_text(GREEN, "success!\n\n".as_bytes());
+    }
 
+    /* Interupts setup */
+    if let Some(gm) = DISPLAY.lock().as_mut() {
+        gm.write_text(WHITE, "setting up interrupts...\n".as_bytes());
+    }
+    arch::init();
     if let Some(gm) = DISPLAY.lock().as_mut() {
         gm.write_text(GREEN, "success!\n\n".as_bytes());
     }
