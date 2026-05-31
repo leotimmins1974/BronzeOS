@@ -7,7 +7,7 @@ use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 use lazy_static::lazy_static;
 use spin::Mutex;
 
-use crate::PURPLE;
+use crate::println;
 
 pub enum InterruptIndex {
     Breakpoint = 3,
@@ -48,11 +48,7 @@ pub fn init_idt() {
 */
 extern "x86-interrupt" fn breakpoint_handler(stack_frame: InterruptStackFrame) {
     if let Some(gm) = super::super::DISPLAY.lock().as_mut() {
-        gm.write_text(
-            super::super::PURPLE,
-            "x86_64 breakpoint interrupt".as_bytes(),
-        );
-        gm.write_text(super::super::ORANGE, "\n> stack frame\n".as_bytes());
+        println!("breakpoint interrupt");
     }
 
     // EOI
@@ -69,9 +65,6 @@ extern "x86-interrupt" fn double_fault_handler(
     stack_frame: InterruptStackFrame,
     _error_code: u64,
 ) -> ! {
-    if let Some(gm) = super::super::DISPLAY.lock().as_mut() {
-        gm.write_text(super::super::ORANGE, "\n> stack frame".as_bytes());
-    }
     panic!("double fault!");
     loop {}
 }
@@ -129,6 +122,5 @@ pub fn init_pit() {
         cmd.write(0b00110110);
         data.write((div & 0xff) as u8); //left 8 bits
         data.write((div >> 8) as u8); //right 8 bits
-    } 
-
+    }
 }

@@ -1,9 +1,5 @@
-use core::num;
-
 use bootloader_api::info::{FrameBufferInfo, PixelFormat};
-use x86_64::structures::paging::mapper::FlagUpdateError::PageNotMapped;
-
-use crate::{PURPLE, YELLOW};
+use core::fmt;
 
 mod fonts;
 
@@ -17,12 +13,14 @@ pub struct GraphicsManager {
     background_color: (u8, u8, u8),
     char_space: (usize, usize),
     cursor: (usize, usize),
+    fg: (u8, u8, u8),
 }
 
 impl GraphicsManager {
     pub fn new(info: FrameBufferInfo, buffer: &'static mut [u8]) -> Self {
         // color_definitions (R,G,B)
-        let background_color = (30, 30, 36);
+        let background_color = (0, 0, 0);
+        let fg: (u8, u8, u8) = (180, 180, 180);
 
         // determine scaling amount
         let scaling;
@@ -46,6 +44,7 @@ impl GraphicsManager {
             background_color,
             char_space,
             cursor,
+            fg,
         }
     }
 
@@ -74,7 +73,7 @@ impl GraphicsManager {
         }
     }
 
-    pub fn write_text(&mut self, fg: (u8, u8, u8), text: &[u8]) {
+    pub fn write_text(&mut self, text: &[u8]) {
         for c in text.iter() {
             match c {
                 //newline
@@ -89,7 +88,7 @@ impl GraphicsManager {
                 //}
                 _ => {
                     let bitmap = fonts::get_charecter_bitmap(*c);
-                    self.blit_charecter(self.cursor_to_pixel_coords(), bitmap, fg);
+                    self.blit_charecter(self.cursor_to_pixel_coords(), bitmap);
                     self.cursor_right();
                 }
             }
@@ -97,13 +96,17 @@ impl GraphicsManager {
     }
 
     /* blits a bitmap with offset */
-    fn blit_charecter(&mut self, offset: (usize, usize), bitmap: [u8; 16], fg: (u8, u8, u8)) {
+    fn blit_charecter(&mut self, offset: (usize, usize), bitmap: [u8; 16]) {
         for (row_local_i, row_value) in bitmap.iter().enumerate() {
             let row_global_i = offset.1 + (row_local_i) * self.scaling;
             for column_local_i in 0..8 {
                 let column_global_i = offset.0 + (column_local_i * self.scaling);
                 let pixel = ((row_value >> (7 - column_local_i)) & 1) != 0;
-                let color = if pixel { fg } else { self.background_color };
+                let color = if pixel {
+                    self.fg
+                } else {
+                    self.background_color
+                };
                 for x in 0..self.scaling {
                     for y in 0..self.scaling {
                         self.set_pixel_color(column_global_i + x, row_global_i + y, color);
@@ -192,51 +195,11 @@ impl GraphicsManager {
             }
         }
     }
+}
 
-    pub fn write_formated_text_u32(&mut self, color: (u8, u8, u8), text: &[u8], mut number: u32) {
-        if let Some(position) = text.windows(2).position(|w| w == b"{}") {
-            let mut buff = [CHAR_NONE; 10];
-            let mut i = 10;
-
-            if number == 0 {
-                i -= 1;
-                let c = self.u32_digit_to_text(0);
-                buff[i] = c;
-            } else {
-                while number > 0 {
-                    i -= 1;
-                    buff[i] = self.u32_digit_to_text(number % 10);
-                    number /= 10;
-                }
-            }
-
-            self.write_text(color, &text[..position]);
-            self.write_text(color, &buff[i..10]);
-            self.write_text(color, &text[position + 2..]);
-        } else {
-            self.write_text(PURPLE, text);
-            self.write_text(
-                YELLOW,
-                "warning: formatted text has no valid symbol\n\n".as_bytes(),
-            );
-        };
-    }
-
-    fn u32_digit_to_text(&self, number: u32) -> u8 {
-        match number {
-            1 => b'1',
-            2 => b'2',
-            3 => b'3',
-            4 => b'4',
-            5 => b'5',
-            6 => b'6',
-            7 => b'7',
-            8 => b'8',
-            9 => b'9',
-            0 => b'0',
-            _ => {
-                panic!("u32_digit_to_text recieved a non digit")
-            }
-        }
+impl fmt::Write for GraphicsManager {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.write_text(s.as_bytes());
+        Ok(())
     }
 }

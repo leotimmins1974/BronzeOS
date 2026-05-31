@@ -2,8 +2,7 @@ use core::hint::spin_loop;
 use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::Ordering;
 
-pub const TICK_HZ: usize = 100; 
-
+pub const TICK_HZ: usize = 100;
 
 pub struct TimeManager {
     boot_time: usize,
@@ -11,18 +10,19 @@ pub struct TimeManager {
 }
 
 impl TimeManager {
-    pub fn new(boot_time:usize) -> Self {
-        Self { 
+    pub fn new(boot_time: usize) -> Self {
+        Self {
             boot_time,
-            tick_counter:AtomicUsize::new(0),
+            tick_counter: AtomicUsize::new(0),
         }
     }
 
     pub fn register_tick(&self) {
-        self.tick_counter.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
+        self.tick_counter
+            .fetch_add(1, core::sync::atomic::Ordering::Relaxed);
     }
 
-    pub fn get_uptime_ms(&self) -> usize{
+    pub fn get_uptime_ms(&self) -> usize {
         let current_tick = self.tick_counter.load(Ordering::Relaxed);
         self.ticks_to_ms(current_tick)
     }
@@ -31,12 +31,12 @@ impl TimeManager {
         self.ticks_to_ms(end - start)
     }
 
-    pub fn ms_to_ticks(&self, time:usize) -> usize {
+    pub fn ms_to_ticks(&self, time: usize) -> usize {
         (time * TICK_HZ) / 1000
     }
 
-    pub fn ticks_to_ms(&self, ticks:usize) -> usize {
-        (ticks*1000) / TICK_HZ
+    pub fn ticks_to_ms(&self, ticks: usize) -> usize {
+        (ticks * 1000) / TICK_HZ
     }
 }
 
@@ -48,7 +48,14 @@ pub fn sleep(duration: usize) {
     }
 
     loop {
-        let current = { super::TIME.lock().as_ref().unwrap().tick_counter.load(Ordering::Relaxed) };
+        let current = {
+            super::TIME
+                .lock()
+                .as_ref()
+                .unwrap()
+                .tick_counter
+                .load(Ordering::Relaxed)
+        };
         if current > end {
             break;
         }
