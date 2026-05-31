@@ -16,6 +16,7 @@ use spin::Mutex;
 
 use crate::graphics::GraphicsManager;
 use crate::keyboard::KeyboardManager;
+use crate::time::TimeManager;
 
 mod arch;
 mod graphics;
@@ -27,6 +28,7 @@ bootloader_api::entry_point!(entry);
 lazy_static! {
     static ref DISPLAY: Mutex<Option<GraphicsManager>> = Mutex::new(None);
     static ref KEYBOARD: Mutex<Option<KeyboardManager>> = Mutex::new(None);
+    static ref TIME: Mutex<Option<TimeManager>> = Mutex::new(None);
 }
 
 const WHITE: (u8, u8, u8) = (240, 240, 240);
@@ -56,25 +58,44 @@ fn entry(boot_info: &'static mut BootInfo) -> ! {
 
     /* Keyboard Manager setup */
     if let Some(gm) = DISPLAY.lock().as_mut() {
-        gm.write_text(WHITE, "setting up keyboard manager...\n".as_bytes());
+        gm.write_text(WHITE, "setting up keyboard manager...".as_bytes());
     }
     let km = KeyboardManager::new();
     *KEYBOARD.lock() = Some(km);
     if let Some(gm) = DISPLAY.lock().as_mut() {
-        gm.write_text(GREEN, "success!\n\n".as_bytes());
+        gm.write_text(GREEN, "success!\n".as_bytes());
     }
 
-    /* Interupts setup */
+    /* TimeManager setup */
     if let Some(gm) = DISPLAY.lock().as_mut() {
-        gm.write_text(WHITE, "setting up interrupts...\n".as_bytes());
+        gm.write_text(WHITE, "setting up time manager...".as_bytes());
     }
-    arch::init();
+    let tm = TimeManager::new(0);
+    *TIME.lock() = Some(tm);
     if let Some(gm) = DISPLAY.lock().as_mut() {
-        gm.write_text(GREEN, "success!\n\n".as_bytes());
+        gm.write_text(GREEN, "success!\n".as_bytes());
+    }
+
+    /* IDT setup */
+    if let Some(gm) = DISPLAY.lock().as_mut() {
+        gm.write_text(WHITE, "setting up idt...".as_bytes());
+    }
+    arch::init_idt();
+    if let Some(gm) = DISPLAY.lock().as_mut() {
+        gm.write_text(GREEN, "success!\n".as_bytes());
+    }
+
+    /* PIT setup */
+    if let Some(gm) = DISPLAY.lock().as_mut() {
+        gm.write_text(WHITE, "setting up pit...".as_bytes());
+    }
+    arch::init_pit();
+    if let Some(gm) = DISPLAY.lock().as_mut() {
+        gm.write_text(GREEN, "success!\n".as_bytes());
     }
 
     if let Some(gm) = DISPLAY.lock().as_mut() {
-        gm.write_text(GREEN, "all tasks complete...\n".as_bytes());
+        gm.write_text(GREEN, "\nall tasks complete...\n".as_bytes());
     }
 
     loop {}

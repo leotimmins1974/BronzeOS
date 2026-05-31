@@ -84,6 +84,11 @@ extern "x86-interrupt" fn timer_handler(stack_frame: InterruptStackFrame) {
     //    gm.write_text(PURPLE, ".".as_bytes());
     //}
 
+    // Register tick
+    if let Some(tm) = super::super::TIME.lock().as_mut() {
+        tm.register_tick();
+    }
+
     // EOI
     unsafe {
         PICS.lock()
@@ -111,4 +116,19 @@ extern "x86-interrupt" fn keyboard_handler(stack_frame: InterruptStackFrame) {
         PICS.lock()
             .notify_end_of_interrupt(InterruptIndex::Keyboard as u8);
     }
+}
+
+pub fn init_pit() {
+    let mut cmd = Port::<u8>::new(0x43);
+    let mut data = Port::<u8>::new(0x40);
+
+    let div = (1193182 / super::super::time::TICK_HZ) as u16;
+
+    // pid programming, chanel 0, low then high byte, square wave, binary counter
+    unsafe {
+        cmd.write(0b00110110);
+        data.write((div & 0xff) as u8); //left 8 bits
+        data.write((div >> 8) as u8); //right 8 bits
+    } 
+
 }

@@ -30,9 +30,9 @@ impl GraphicsManager {
         if info.width <= 720 {
             scaling = 1;
         } else if info.width <= 1440 {
-            scaling = 2;
+            scaling = 1;
         } else {
-            scaling = 3;
+            scaling = 2;
         }
 
         // how many charecters can fit on display
