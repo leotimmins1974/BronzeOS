@@ -83,12 +83,21 @@ fn entry(boot_info: &'static mut BootInfo) -> ! {
     println!("--- Bootloader Info ---");
     println!("boodloader api ver:     {:?}", boot_info.api_version);
     println!("kernel adr:             {:?}", boot_info.kernel_addr);
-    println!("kernel img offset:      {:?}", boot_info.kernel_image_offset);
+    println!(
+        "kernel img offset:      {:?}",
+        boot_info.kernel_image_offset
+    );
     println!("kernel len:             {:?}", boot_info.kernel_len);
-    println!("kernel stack bottom:    {:?}", boot_info.kernel_stack_bottom);
+    println!(
+        "kernel stack bottom:    {:?}",
+        boot_info.kernel_stack_bottom
+    );
     println!("kernel stack len:       {:?}", boot_info.kernel_stack_len);
     println!("mem regions:            {:?}", boot_info.memory_regions);
-    println!("phys mem offset:        {:?}", boot_info.physical_memory_offset);
+    println!(
+        "phys mem offset:        {:?}",
+        boot_info.physical_memory_offset
+    );
     println!("ramdisk adr:            {:?}", boot_info.ramdisk_addr);
     println!("ramdisk len:            {:?}", boot_info.ramdisk_len);
     println!("recurs index:           {:?}", boot_info.recursive_index);

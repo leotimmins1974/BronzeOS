@@ -3,9 +3,6 @@ use core::fmt;
 
 mod fonts;
 
-const CHAR_PAD: usize = 1;
-const CHAR_NONE: u8 = 0; // what char we consider to be nothing
-
 pub struct GraphicsManager {
     info: FrameBufferInfo,
     buffer: &'static mut [u8],
@@ -25,9 +22,7 @@ impl GraphicsManager {
         // determine scaling amount
         let scaling;
 
-        if info.width <= 720 {
-            scaling = 1;
-        } else if info.width <= 1440 {
+        if info.width <= 1440 {
             scaling = 1;
         } else {
             scaling = 2;
@@ -76,16 +71,9 @@ impl GraphicsManager {
     pub fn write_text(&mut self, text: &[u8]) {
         for c in text.iter() {
             match c {
-                //newline
                 b'\n' => {
                     self.cursor_newline();
                 }
-                //backspace - we dont need it
-                //b'\x08' => {
-                //    self.cursor_left();
-                //    let bitmap = fonts::get_charecter_bitmap(b' ');
-                //    self.blit_charecter(self.cursor_to_pixel_coords(), bitmap, fg);
-                //}
                 _ => {
                     let bitmap = fonts::get_charecter_bitmap(*c);
                     self.blit_charecter(self.cursor_to_pixel_coords(), bitmap);
@@ -155,7 +143,6 @@ impl GraphicsManager {
     fn cursor_newline(&mut self) {
         self.cursor.0 = 1;
         if self.cursor.1 == self.char_space.1 - 1 {
-            // Chop the first bit of the framebuffer off to make room
             self.chop_frame_buffer(17 * self.scaling);
             self.cursor.1 = self.char_space.1 - 1;
         } else {
