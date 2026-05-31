@@ -72,7 +72,6 @@ impl GraphicsManager {
         if text.is_ascii() {
             let ascii_bytes = text.as_bytes();
             for c in ascii_bytes.iter() {
-
                 match c {
                     b'\n' => {
                         self.cursor_newline();
@@ -146,9 +145,9 @@ impl GraphicsManager {
 
     fn cursor_newline(&mut self) {
         self.cursor.0 = 0;
-        if self.cursor.1 == self.char_space.1 -1 {
+        if self.cursor.1 == self.char_space.1 - 1 {
             // Chop the first bit of the framebuffer off to make room
-            self.chop_frame_buffer(17*self.scaling);
+            self.chop_frame_buffer(17 * self.scaling);
             self.cursor.1 = self.char_space.1 - 1;
         } else {
             self.cursor.1 += 1;

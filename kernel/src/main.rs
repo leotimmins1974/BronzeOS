@@ -12,8 +12,8 @@ By Leo Timmins, 2026
 use bootloader_api::BootInfo;
 use core::panic::PanicInfo;
 
-mod graphics; // provides ascii bitmaps
 mod arch;
+mod graphics;
 
 bootloader_api::entry_point!(entry);
 
@@ -32,7 +32,7 @@ fn entry(boot_info: &'static mut BootInfo) -> ! {
         gm.wipe();
         gm.write_text(white, "BRONZE OS\n");
         gm.write_text(white, "MADE BY LEO TIMMINS\n\n");
-        
+
         gm.write_text(white, "setting up interupts...\n");
         arch::init();
         gm.write_text(green, "success!\n\n");
