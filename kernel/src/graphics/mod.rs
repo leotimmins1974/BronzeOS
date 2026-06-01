@@ -17,7 +17,7 @@ impl GraphicsManager {
     pub fn new(info: FrameBufferInfo, buffer: &'static mut [u8]) -> Self {
         // color_definitions (R,G,B)
         let background_color = (0, 0, 0);
-        let fg: (u8, u8, u8) = (180, 180, 180);
+        let fg: (u8, u8, u8) = (245, 124, 52);
 
         // determine scaling amount
         let scaling;

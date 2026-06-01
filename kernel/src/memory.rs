@@ -19,7 +19,6 @@ lazy_static! {
 
 #[cfg(debug_assertions)]
 fn debug_memory_map(mem_map: &MemoryRegions) {
-    println!();
     println!("--- Memory Map ---");
     for (i, region) in mem_map.iter().enumerate() {
         println!(

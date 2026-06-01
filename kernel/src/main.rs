@@ -83,7 +83,6 @@ fn entry(boot_info: &'static mut BootInfo) -> ! {
 
     #[cfg(debug_assertions)]
     {
-        println!();
         println!("--- Bootloader Info ---");
         println!("boodloader api ver:     {:?}", boot_info.api_version);
         println!("kernel adr:             {:?}", boot_info.kernel_addr);
@@ -110,8 +109,7 @@ fn entry(boot_info: &'static mut BootInfo) -> ! {
         println!("-----------------------");
     }
 
-    println!("---------------------------------");
-    println!("all tasks complete...");
+    println!("> all tasks complete...");
 
     loop {}
 }
