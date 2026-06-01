@@ -44,22 +44,18 @@ impl GraphicsManager {
     }
 
     pub fn wipe(&mut self) {
-        self.fill_buffer(self.background_color);
-    }
-
-    fn fill_buffer(&mut self, color: (u8, u8, u8)) {
         for i in (0..self.info.byte_len).step_by(self.info.bytes_per_pixel) {
             // determine the pixelformat
             match self.info.pixel_format {
                 PixelFormat::Rgb => {
-                    self.buffer[i] = color.0;
-                    self.buffer[i + 1] = color.1;
-                    self.buffer[i + 2] = color.2;
+                    self.buffer[i] = self.background_color.0;
+                    self.buffer[i + 1] = self.background_color.1;
+                    self.buffer[i + 2] = self.background_color.2;
                 }
                 PixelFormat::Bgr => {
-                    self.buffer[i] = color.2;
-                    self.buffer[i + 1] = color.1;
-                    self.buffer[i + 2] = color.0;
+                    self.buffer[i] = self.background_color.2;
+                    self.buffer[i + 1] = self.background_color.1;
+                    self.buffer[i + 2] = self.background_color.0;
                 }
                 _ => {
                     // Error: Pixel format not supported
@@ -124,12 +120,6 @@ impl GraphicsManager {
             _ => {
                 // Error: Pixel format not supported
             }
-        }
-    }
-
-    fn cursor_left(&mut self) {
-        if self.cursor.0 > 1 {
-            self.cursor.0 -= 1;
         }
     }
 

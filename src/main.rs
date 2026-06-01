@@ -19,6 +19,7 @@ fn main() {
     let mut qemu = Command::new("qemu-system-x86_64");
     qemu.arg("-drive")
         .arg(format!("format=raw,file={}", bios_path.display()));
+    qemu.arg("-m").arg("2G");
 
     let mut child = qemu.spawn().expect("QEMU FAILED");
 

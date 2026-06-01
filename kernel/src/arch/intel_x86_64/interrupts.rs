@@ -1,5 +1,3 @@
-// for intels x86_64 architecture
-
 use pic8259::ChainedPics;
 use x86_64::instructions::port::Port;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
@@ -21,9 +19,6 @@ const PIC_2_OFFSET: u8 = 40;
 lazy_static! {
     static ref PICS: Mutex<ChainedPics> =
         unsafe { Mutex::new(ChainedPics::new(PIC_1_OFFSET, PIC_2_OFFSET)) };
-}
-
-lazy_static! {
     static ref IDT: InterruptDescriptorTable = {
         let mut idt = InterruptDescriptorTable::new();
         idt.breakpoint.set_handler_fn(breakpoint_handler);
@@ -34,22 +29,35 @@ lazy_static! {
     };
 }
 
-pub fn init_idt() {
+pub fn init() {
+    /* Enable Interupts */
     IDT.load();
-
     unsafe {
         PICS.lock().initialize();
     }
-
     x86_64::instructions::interrupts::enable();
+
+    /* Configure PIT */
+    init_pit();
 }
 
-/* Breakpoint Handler
-*/
-extern "x86-interrupt" fn breakpoint_handler(stack_frame: InterruptStackFrame) {
-    if let Some(gm) = super::super::DISPLAY.lock().as_mut() {
-        println!("breakpoint interrupt");
+fn init_pit() {
+    let mut cmd = Port::<u8>::new(0x43);
+    let mut data = Port::<u8>::new(0x40);
+
+    let div = (1193182 / crate::time::TICK_HZ) as u16;
+
+    // pid programming, chanel 0, low then high byte, square wave, binary counter
+    unsafe {
+        cmd.write(0b00110110);
+        data.write((div & 0xff) as u8); //left 8 bits
+        data.write((div >> 8) as u8); //right 8 bits
     }
+}
+
+/* Breakpoint Handler */
+extern "x86-interrupt" fn breakpoint_handler(stack_frame: InterruptStackFrame) {
+    println!("breakpoint interrupt");
 
     // EOI
     unsafe {
@@ -58,27 +66,18 @@ extern "x86-interrupt" fn breakpoint_handler(stack_frame: InterruptStackFrame) {
     }
 }
 
-/* Double Fault Handler
-Occurs when kernel ignores an interrupt
-*/
+/* Double Fault Handler */
 extern "x86-interrupt" fn double_fault_handler(
     stack_frame: InterruptStackFrame,
     _error_code: u64,
 ) -> ! {
     panic!("double fault!");
-    loop {}
 }
 
-/* Timer Handler
-Periodic interupt to provide the time to the kernel */
+/* Timer Handler */
 extern "x86-interrupt" fn timer_handler(stack_frame: InterruptStackFrame) {
-    // temp debugging
-    //if let Some(gm) = super::super::DISPLAY.lock().as_mut() {
-    //    gm.write_text(PURPLE, ".".as_bytes());
-    //}
-
-    // Register tick
-    if let Some(tm) = super::super::TIME.lock().as_mut() {
+    // register tick
+    if let Some(tm) = crate::TIME.lock().as_mut() {
         tm.register_tick();
     }
 
@@ -91,36 +90,17 @@ extern "x86-interrupt" fn timer_handler(stack_frame: InterruptStackFrame) {
 
 /* Keyboard Interupt */
 extern "x86-interrupt" fn keyboard_handler(stack_frame: InterruptStackFrame) {
+    // read scancode
     let mut port = Port::<u8>::new(0x60); // PS/2 data port u8
     let scancode = unsafe { port.read() };
 
-    // this is temporary
-    //if let Some(gm) = super::super::DISPLAY.lock().as_mut() {
-    //    gm.write_text(PURPLE, "scancode: ".as_bytes());
-    //    gm.write_formated_text_u32(super::super::WHITE, "{} ".as_bytes(), scancode as u32);
-    //}
-
     // register the scancode
-    if let Some(km) = super::super::KEYBOARD.lock().as_mut() {
+    if let Some(km) = crate::KEYBOARD.lock().as_mut() {
         km.register_scancode(scancode);
     }
     // EOI
     unsafe {
         PICS.lock()
             .notify_end_of_interrupt(InterruptIndex::Keyboard as u8);
-    }
-}
-
-pub fn init_pit() {
-    let mut cmd = Port::<u8>::new(0x43);
-    let mut data = Port::<u8>::new(0x40);
-
-    let div = (1193182 / super::super::time::TICK_HZ) as u16;
-
-    // pid programming, chanel 0, low then high byte, square wave, binary counter
-    unsafe {
-        cmd.write(0b00110110);
-        data.write((div & 0xff) as u8); //left 8 bits
-        data.write((div >> 8) as u8); //right 8 bits
     }
 }
