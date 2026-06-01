@@ -2,7 +2,8 @@
 #![no_main]
 #![feature(abi_x86_interrupt)]
 
-use bootloader_api::BootInfo;
+use bootloader_api::config::Mapping;
+use bootloader_api::{BootInfo, BootloaderConfig};
 use core::fmt::Write;
 use core::panic::PanicInfo;
 use lazy_static::lazy_static;
@@ -18,7 +19,13 @@ mod keyboard;
 mod memory;
 mod time;
 
-bootloader_api::entry_point!(entry);
+bootloader_api::entry_point!(entry, config = &BOOTLOADER_CONFIG);
+
+const BOOTLOADER_CONFIG: BootloaderConfig = {
+    let mut config = BootloaderConfig::new_default();
+    config.mappings.physical_memory = Some(Mapping::Dynamic);
+    config
+};
 
 lazy_static! {
     static ref DISPLAY: Mutex<Option<GraphicsManager>> = Mutex::new(None);
@@ -64,7 +71,13 @@ fn entry(boot_info: &'static mut BootInfo) -> ! {
     println!();
     println!("---- hardware initialization ----");
 
-    arch::init(&boot_info.memory_regions);
+    arch::init(
+        &boot_info.memory_regions,
+        boot_info
+            .physical_memory_offset
+            .into_option()
+            .expect("phys_mem_offset was None"),
+    );
 
     println!();
 

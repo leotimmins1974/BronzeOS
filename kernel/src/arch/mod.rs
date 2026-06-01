@@ -6,12 +6,12 @@ mod intel_x86_64;
 #[cfg(target_arch = "aarch64")]
 mod aarch64;
 
-pub fn init(mem_map: &MemoryRegions) {
+pub fn init(mem_map: &MemoryRegions, phys_mem_offset: u64) {
     #[cfg(target_arch = "x86_64")]
     {
         /* intel_x86_64 initiation pathway */
         intel_x86_64::init();
-        intel_x86_64::memory::init(mem_map);
+        intel_x86_64::memory::init(mem_map, phys_mem_offset);
     }
 
     #[cfg(target_arch = "aarch64")]
