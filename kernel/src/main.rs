@@ -111,6 +111,12 @@ fn entry(boot_info: &'static mut BootInfo) -> ! {
 
     println!("> all tasks complete...");
 
+    // memory testing
+    {
+        let assigned_page = unsafe { memory::alloc_page().expect("no free pages") };
+        println!("Page allocated: {}", assigned_page)
+    }
+
     loop {}
 }
 

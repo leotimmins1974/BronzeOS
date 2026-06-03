@@ -8,12 +8,14 @@ use crate::println;
 struct MemoryManager {
     page_size: u64,
     phys_mem_offset: u64,
+    mem_map: Option<&'static MemoryRegions>,
 }
 
 lazy_static! {
     static ref MEMORY: Mutex<MemoryManager> = Mutex::new(MemoryManager {
         page_size: 0,
-        phys_mem_offset: 0
+        phys_mem_offset: 0,
+        mem_map: None
     });
 }
 
@@ -52,7 +54,7 @@ struct PageNode {
 }
 
 pub struct PMMListEntry {
-    head: *mut PageNode,
+    head: Option<*mut PageNode>,
     free_pages: usize,
 }
 
@@ -60,14 +62,15 @@ unsafe impl Send for PMMListEntry {}
 
 lazy_static! {
     static ref PMM: Mutex<PMMListEntry> = Mutex::new(PMMListEntry {
-        head: core::ptr::null_mut(),
+        head: Some(core::ptr::null_mut()),
         free_pages: 0
     });
 }
 
-pub fn init(mem_map: &MemoryRegions, phys_mem_offset: u64, page_size: u64) {
+pub fn init(mem_map: &'static MemoryRegions, phys_mem_offset: u64, page_size: u64) {
     MEMORY.lock().phys_mem_offset = phys_mem_offset;
     MEMORY.lock().page_size = page_size;
+    MEMORY.lock().mem_map = Some(mem_map);
 
     #[cfg(debug_assertions)]
     debug_memory_map(mem_map);
@@ -96,12 +99,25 @@ pub fn init(mem_map: &MemoryRegions, phys_mem_offset: u64, page_size: u64) {
         }
     }
 
-    PMM.lock().head = head;
+    PMM.lock().head = Some(head);
     PMM.lock().free_pages = count;
 }
 
 pub unsafe fn alloc_page() -> Option<u64> {
-    Some(1)
+    // no free pages
+    if PMM.lock().free_pages == 0 {
+        return None;
+    }
+
+    // get current and new head
+    let mut head = PMM.lock().head.expect("No head in alloc_page");
+    let mut new_head = unsafe { head.read().next };
+
+    // assign new head to PMM struct
+    PMM.lock().head = Some(new_head);
+
+    // assign the head
+    return Some(head.addr() as u64);
 }
 
 pub unsafe fn free_page(adress: u64) {
